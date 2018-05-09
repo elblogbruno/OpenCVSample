@@ -19,7 +19,10 @@ import org.opencv.core.Point;
 import org.opencv.core.MatOfRect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
-
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.ListIterator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ContentValues;
@@ -65,40 +68,37 @@ import static android.provider.AlarmClock.EXTRA_MESSAGE;
 import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
 
 
-public class MainActivity extends Activity implements CvCameraViewListener2 {
+public class MainActivity extends Activity implements CvCameraViewListener2, View.OnTouchListener {
     private static final String TAG = "OCVSample::Activity";
-    private static final Scalar    FACE_RECT_COLOR     = new Scalar(0, 255, 0, 255);
+    private static final Scalar FACE_RECT_COLOR = new Scalar(0, 255, 0, 255);
     public static final int JAVA_DETECTOR = 0;
     private Camera mCamera;
-    private Mat                    mRgba;
-    private Mat                    mGray;
-    private File                   mCascadeFile;
+    private Mat mRgba;
+    private Mat mGray;
+    private File mCascadeFile;
+    private TakePicture1 mOpenCvCameraView;
     private CascadeClassifier mJavaDetector;
-    private int                    mDetectorType       = JAVA_DETECTOR;
-    private String[]               mDetectorName;
-    private float                  mRelativeFaceSize   = 0.2f;
+    private int mDetectorType = JAVA_DETECTOR;
+    private String[] mDetectorName;
+    private float mRelativeFaceSize = 0.2f;
     private int mAbsoluteFaceSize = 0;
-    private MenuItem               mItemFace50;
-    private MenuItem               mItemFace40;
-    private MenuItem               mItemFace30;
-    private MenuItem               mItemFace20;
+    private MenuItem mItemFace50;
+    private MenuItem mItemFace40;
+    private MenuItem mItemFace30;
+    private MenuItem mItemFace20;
     private String mPictureFileName;
 
 
-    private CameraBridgeViewBase mOpenCvCameraView;
 
-    private boolean              mIsJavaCamera = true;
-    private MenuItem             mItemSwitchCamera = null;
-
+    private boolean mIsJavaCamera = true;
+    private MenuItem mItemSwitchCamera = null;
 
 
-
-    private BaseLoaderCallback  mLoaderCallback = new BaseLoaderCallback(this) {
+    private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
             switch (status) {
-                case LoaderCallbackInterface.SUCCESS:
-                {
+                case LoaderCallbackInterface.SUCCESS: {
                     Log.i(TAG, "OpenCV loaded successfully");
 
 
@@ -118,13 +118,12 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
                         os.close();
 
                         mJavaDetector = new CascadeClassifier(mCascadeFile.getAbsolutePath());
-                        mJavaDetector.load( mCascadeFile.getAbsolutePath() );
+                        mJavaDetector.load(mCascadeFile.getAbsolutePath());
                         if (mJavaDetector.empty()) {
                             Log.e(TAG, "Failed to load cascade classifier");
                             mJavaDetector = null;
                         } else
                             Log.i(TAG, "Loaded cascade classifier from " + mCascadeFile.getAbsolutePath());
-
 
 
                         cascadeDir.delete();
@@ -135,11 +134,12 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
                     }
 
                     mOpenCvCameraView.enableView();
-                } break;
-                default:
-                {
+                }
+                break;
+                default: {
                     super.onManagerConnected(status);
-                } break;
+                }
+                break;
             }
         }
     };
@@ -150,18 +150,21 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 
         Log.i(TAG, "Instantiated new " + this.getClass());
     }
-    /** Called when the activity is first created. */
+
+    /**
+     * Called when the activity is first created.
+     */
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        Log.i(TAG, "called onCreate");Log.i(TAG, "called onCreate");
+        Log.i(TAG, "called onCreate");
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        setRequestedOrientation (ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         setContentView(R.layout.activity_main);
 
-        mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.tutorial1_activity_java_surface_view);
+        mOpenCvCameraView = (TakePicture1) findViewById(R.id.tutorial1_activity_java_surface_view);
 
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
         mOpenCvCameraView.setCvCameraViewListener(this);
@@ -174,22 +177,13 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
             }
         });
 
-        final Button button1 = findViewById(R.id.CameraButton);
-        button.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
 
-                captureImage(mOpenCvCameraView );
-
-            }
-
-        });
 
 
     }
 
     @Override
-    public void onPause()
-    {
+    public void onPause() {
         super.onPause();
         if (mOpenCvCameraView != null)
             mOpenCvCameraView.disableView();
@@ -197,8 +191,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 
 
     @Override
-    public void onResume()
-    {
+    public void onResume() {
         super.onResume();
         if (!OpenCVLoader.initDebug()) {
             Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
@@ -248,9 +241,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         }
         Rect[] facesArray = faces.toArray();
         for (int i = 0; i < facesArray.length; i++)
-                
-            Imgproc.rectangle(mRgba, facesArray[i].tl(), facesArray[i].br(), FACE_RECT_COLOR, 3);
 
+            Imgproc.rectangle(mRgba, facesArray[i].tl(), facesArray[i].br(), FACE_RECT_COLOR, 3);
 
 
         return mRgba;
@@ -264,7 +256,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         mItemFace40 = menu.add("Face size 40%");
         mItemFace30 = menu.add("Face size 30%");
         mItemFace20 = menu.add("Face size 20%");
-       getMenuInflater();
+        getMenuInflater();
         return true;
     }
 
@@ -290,26 +282,16 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     }
 
 
-    public void captureImage(View v){
-        Mat mInter= new Mat(mRgba.width(),mRgba.height(),CvType.CV_32FC3);
-        File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-        String filename = "temp.jpg";
-        File file = new File(path, filename);
-        Boolean bool = null;
-        filename = file.toString();
-        if(mRgba.height() > mRgba.width()){
-            Core.flip(mRgba,mInter,1);
-            bool = Imgcodecs.imwrite(filename, mInter);
+    @SuppressLint("SimpleDateFormat")
+    public boolean onTouch(View v, MotionEvent event) {
+        Log.i(TAG,"onTouch event");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
+        String currentDateandTime = sdf.format(new Date());
+        String fileName = Environment.getExternalStorageDirectory().getPath() +
+                "/sample_picture_" + currentDateandTime + ".jpg";
+        mOpenCvCameraView.takePicture(fileName);
+        Toast.makeText(this, fileName + " saved", Toast.LENGTH_SHORT).show();
+        return false;
         }
-        else{
-            bool = Imgcodecs.imwrite(filename,mInter);}
-        if (bool == true)
-            Log.i(TAG, "SUCCESS writing image to external storage");
-        else
-            Log.i(TAG, "Fail writing image to external storage");
-        String PathName = "";
-        Intent i = new Intent(getApplication(),Result.class);
-        i.putExtra(EXTRA_MESSAGE ,filename);
-        startActivity(i);
-    }
+
 }
