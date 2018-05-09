@@ -178,7 +178,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         button.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
 
-                Imgcodecs.imwrite("resizedCat.jpg", mRgba);
+                captureImage(mOpenCvCameraView );
 
             }
 
