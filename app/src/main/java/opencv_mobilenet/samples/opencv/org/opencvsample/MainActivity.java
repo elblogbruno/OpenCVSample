@@ -5,100 +5,82 @@ import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
-import org.opencv.android.Utils;
-import org.opencv.core.CvException;
-import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
-import org.opencv.core.MatOfByte;
+import org.opencv.core.Point;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.core.Point;
 import org.opencv.core.MatOfRect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-import java.util.ListIterator;
-import android.annotation.SuppressLint;
+
 import android.app.Activity;
-import android.content.ContentValues;
-import android.content.Intent;
 import android.content.pm.ActivityInfo;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.hardware.Camera;
-import android.hardware.Camera.PictureCallback;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
-import android.provider.MediaStore;
 import android.util.Log;
-import org.opencv.core.Core;
+
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-import java.util.Random;
 
 import android.view.MenuItem;
 import android.view.Menu;
-import android.view.MotionEvent;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.content.Context;
-import org.opencv.core.Rect;
-import android.util.Log;
+import android.widget.CompoundButton;
+import android.widget.Switch;
+import android.widget.TextView;
 import android.widget.Toast;
 
-import javax.xml.transform.Result;
-
-import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
-import static android.provider.AlarmClock.EXTRA_MESSAGE;
-import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
+import org.opencv.core.Rect;
 
 
-public class MainActivity extends Activity implements CvCameraViewListener2, View.OnTouchListener {
+public class MainActivity extends Activity implements CvCameraViewListener2, CompoundButton.OnCheckedChangeListener {
+
     private static final String TAG = "OCVSample::Activity";
-    private static final Scalar FACE_RECT_COLOR = new Scalar(0, 255, 0, 255);
+    private static final Scalar    FACE_RECT_COLOR     = new Scalar(0, 255, 0, 255);
     public static final int JAVA_DETECTOR = 0;
-    private Camera mCamera;
-    private Mat mRgba;
-    private Mat mGray;
-    private File mCascadeFile;
-    private TakePicture1 mOpenCvCameraView;
+
+    private Mat                    mRgba;
+    private Mat                    mGray;
+    private File                   mCascadeFile;
     private CascadeClassifier mJavaDetector;
-    private int mDetectorType = JAVA_DETECTOR;
-    private String[] mDetectorName;
-    private float mRelativeFaceSize = 0.2f;
+    private int                    mDetectorType       = JAVA_DETECTOR;
+    private String[]               mDetectorName;
+    private float                  mRelativeFaceSize   = 0.2f;
     private int mAbsoluteFaceSize = 0;
-    private MenuItem mItemFace50;
-    private MenuItem mItemFace40;
-    private MenuItem mItemFace30;
-    private MenuItem mItemFace20;
+    private MenuItem               mItemFace50;
+    private MenuItem               mItemFace40;
+    private MenuItem               mItemFace30;
+    private MenuItem               mItemFace20;
     private String mPictureFileName;
+    private boolean is_face;
+    private boolean is_detection_on;
+    private Rect[] mRectFaces;
+    private Mat faceMat;
+    private int faceID = 0;
+    private CameraBridgeViewBase mOpenCvCameraView;
+
+    private boolean              mIsJavaCamera = true;
+    private MenuItem             mItemSwitchCamera = null;
+
+    Switch mySwitch = null;
 
 
-
-    private boolean mIsJavaCamera = true;
-    private MenuItem mItemSwitchCamera = null;
-
-
-    private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
+    private BaseLoaderCallback  mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
             switch (status) {
-                case LoaderCallbackInterface.SUCCESS: {
+                case LoaderCallbackInterface.SUCCESS:
+                {
                     Log.i(TAG, "OpenCV loaded successfully");
 
 
@@ -118,12 +100,13 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Vie
                         os.close();
 
                         mJavaDetector = new CascadeClassifier(mCascadeFile.getAbsolutePath());
-                        mJavaDetector.load(mCascadeFile.getAbsolutePath());
+                        mJavaDetector.load( mCascadeFile.getAbsolutePath() );
                         if (mJavaDetector.empty()) {
                             Log.e(TAG, "Failed to load cascade classifier");
                             mJavaDetector = null;
                         } else
                             Log.i(TAG, "Loaded cascade classifier from " + mCascadeFile.getAbsolutePath());
+
 
 
                         cascadeDir.delete();
@@ -134,15 +117,18 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Vie
                     }
 
                     mOpenCvCameraView.enableView();
-                }
-                break;
-                default: {
+                } break;
+                default:
+                {
                     super.onManagerConnected(status);
-                }
-                break;
+                } break;
             }
         }
     };
+
+    public MainActivity() {
+    }
+
 
     public void FdActivity() {
         mDetectorName = new String[1];
@@ -150,10 +136,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Vie
 
         Log.i(TAG, "Instantiated new " + this.getClass());
     }
-
-    /**
-     * Called when the activity is first created.
-     */
+    /** Called when the activity is first created. */
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -161,29 +144,117 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Vie
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        setRequestedOrientation (ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         setContentView(R.layout.activity_main);
 
-        mOpenCvCameraView = (TakePicture1) findViewById(R.id.tutorial1_activity_java_surface_view);
+        mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.tutorial1_activity_java_surface_view);
 
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
         mOpenCvCameraView.setCvCameraViewListener(this);
+
+        is_detection_on = true;
 
 
         final Button button = findViewById(R.id.button);
         button.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 System.exit(0);
+                Log.i(TAG, "Exit button clicked");
+            }
+        });
+        final Button button1 = findViewById(R.id.CameraButton);
+        button1.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                Log.i(TAG, "Camera button clicked");
+
+                    cropAndSaveFace(mRgba, mRectFaces,faceID);
+
+
             }
         });
 
 
+        mySwitch = (Switch) findViewById(R.id.face_switch);
+        mySwitch.setOnCheckedChangeListener( this);
+    }
+    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+        if (isChecked) {
+            Toast.makeText(this, "Turning on face detection!", Toast.LENGTH_LONG).show();
+            is_detection_on = true;
+        } else {
+            Toast.makeText(this, "Turning off face detection", Toast.LENGTH_LONG).show();
+            is_detection_on = false;
+        }
+    }
+
+
+    public boolean detectFaces(Mat image) {
+        // run detector
+        // store detected faces into -> mRectFaces
+        // return false if no faces, true one or more faces
+        MatOfRect faces = new MatOfRect();
+        if (mAbsoluteFaceSize == 0) {
+            int height = mGray.rows();
+            if (Math.round(height * mRelativeFaceSize) > 0) {
+                mAbsoluteFaceSize = Math.round(height * mRelativeFaceSize);
+            }
+        }
+
+        if (mDetectorType == JAVA_DETECTOR) {
+            if (mJavaDetector != null)
+                mJavaDetector.detectMultiScale(mGray, faces, 1.1, 2, 2, // TODO: objdetect.CV_HAAR_SCALE_IMAGE
+                        new Size(mAbsoluteFaceSize, mAbsoluteFaceSize), new Size());
+
+        }
+
+        Rect[] facesArray = faces.toArray();
+        mRectFaces = facesArray;
+
+        if(is_detection_on == true) {
+            Log.i(TAG, "Detection was inicialized");
+            drawFaces(image, mRectFaces);
+            System.out.println(mRectFaces.length);
+        }else{
+            Log.i(TAG, "Detection was stopped");
+        }
+
+        return false;
+    }
+
+    public Mat drawFaces(Mat image, Rect[] faces) {
+        //Just a function that draws rectangles on the faces
+        for (int i = 0; i < faces.length; i++) {
+            Log.i(TAG, "Drawing rectangles");
+            Imgproc.rectangle(image, faces[i].tl(), faces[i].br(), FACE_RECT_COLOR, 3);
+            faceID = i;
+        }
+
+        return image;
+    }
+
+    public void cropAndSaveFace(Mat image, Rect[] faces , int faceId) {
+
+        Rect rectCrop = new Rect(faces[faceId].x, faces[faceId].y , faces[faceId].width, faces[faceId].height);
+        Mat imageROI = new Mat(image,rectCrop);
+        faceMat = imageROI;
+        if(mRectFaces.length > 0){
+            Toast.makeText(this, "I see a face over there!",
+                    Toast.LENGTH_LONG).show();
+            Imgcodecs.imwrite(Environment.getExternalStorageDirectory() + "/Images/Face_Crop.png",imageROI);
+
+        }else{
+
+            Toast.makeText(this, "You need a face to take a photo!",
+                    Toast.LENGTH_LONG).show();
+        }
 
 
     }
 
+
     @Override
-    public void onPause() {
+    public void onPause()
+    {
         super.onPause();
         if (mOpenCvCameraView != null)
             mOpenCvCameraView.disableView();
@@ -191,7 +262,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Vie
 
 
     @Override
-    public void onResume() {
+    public void onResume()
+    {
         super.onResume();
         if (!OpenCVLoader.initDebug()) {
             Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
@@ -209,43 +281,24 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Vie
     }
 
     public void onCameraViewStarted(int width, int height) {
-        mGray = new Mat();
-        mRgba = new Mat();
+
     }
 
     public void onCameraViewStopped() {
-        mGray.release();
-        mRgba.release();
+
     }
 
-    public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
 
+
+    public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
 
         mRgba = inputFrame.rgba();
         mGray = inputFrame.gray();
 
-        MatOfRect faces = new MatOfRect();
-
-        if (mAbsoluteFaceSize == 0) {
-            int height = mGray.rows();
-            if (Math.round(height * mRelativeFaceSize) > 0) {
-                mAbsoluteFaceSize = Math.round(height * mRelativeFaceSize);
-            }
-        }
-
-        if (mDetectorType == JAVA_DETECTOR) {
-            if (mJavaDetector != null)
-                mJavaDetector.detectMultiScale(mGray, faces, 1.1, 2, 2, // TODO: objdetect.CV_HAAR_SCALE_IMAGE
-                        new Size(mAbsoluteFaceSize, mAbsoluteFaceSize), new Size());
-
-        }
-        Rect[] facesArray = faces.toArray();
-        for (int i = 0; i < facesArray.length; i++)
-
-            Imgproc.rectangle(mRgba, facesArray[i].tl(), facesArray[i].br(), FACE_RECT_COLOR, 3);
-
+        detectFaces(mRgba);
 
         return mRgba;
+
 
     }
 
@@ -282,16 +335,5 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Vie
     }
 
 
-    @SuppressLint("SimpleDateFormat")
-    public boolean onTouch(View v, MotionEvent event) {
-        Log.i(TAG,"onTouch event");
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
-        String currentDateandTime = sdf.format(new Date());
-        String fileName = Environment.getExternalStorageDirectory().getPath() +
-                "/sample_picture_" + currentDateandTime + ".jpg";
-        mOpenCvCameraView.takePicture(fileName);
-        Toast.makeText(this, fileName + " saved", Toast.LENGTH_SHORT).show();
-        return false;
-        }
 
 }

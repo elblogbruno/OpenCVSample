@@ -11,14 +11,13 @@
         android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
         android:layout_alignParentTop="true"
-        android:layout_marginEnd="62dp"
         android:text="Close App"
         android:visibility="visible" />
 
     <org.opencv.android.JavaCameraView
         android:id="@+id/tutorial1_activity_java_surface_view"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:visibility="gone"
         opencv:camera_id="any"
         opencv:show_fps="true" />
@@ -30,7 +29,26 @@
         android:layout_alignParentEnd="true"
         android:layout_centerVertical="true"
         android:layout_marginEnd="47dp"
-        android:background="@android:drawable/ic_menu_camera" />
+        android:background="@android:drawable/ic_menu_camera"
+        android:onClick="captureImage" />
+
+    <Switch
+        android:id="@+id/face_switch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="97dp"
+        android:background="@android:color/holo_red_light"
+        android:capitalize="none"
+        android:checked="true"
+        android:showText="true"
+        android:splitTrack="false"
+        android:switchMinWidth="@android:dimen/notification_large_icon_height"
+        android:text="Face Detection"
+        android:textOff="No"
+        android:textOn="Yes"
+        android:visibility="visible" />
 
 </RelativeLayout>
 
