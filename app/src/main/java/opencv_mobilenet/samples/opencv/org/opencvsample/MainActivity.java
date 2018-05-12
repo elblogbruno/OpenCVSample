@@ -252,15 +252,16 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Com
 
         Rect rectCrop = new Rect(faces[faceId].x, faces[faceId].y , faces[faceId].width, faces[faceId].height);
         Mat imageROI = new Mat(image,rectCrop);
+        Mat mIntermediateMat = new Mat();
         faceMat = imageROI;
-
-            Toast.makeText(this, "I see a face over there!",
+        Toast.makeText(this, "I see a face over there!",
                     Toast.LENGTH_LONG).show();
-            final MediaPlayer mp = MediaPlayer.create(this, R.raw.soundcamera);
-            mp.start();
-            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+        final MediaPlayer mp = MediaPlayer.create(this, R.raw.soundcamera);
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
 
-            Imgcodecs.imwrite(Environment.getExternalStorageDirectory() + "/Images/"+ timeStamp.toString()+"_Face_Crop.png",imageROI);
+        mp.start();//Camera Sound
+        Imgproc.cvtColor(faceMat,mIntermediateMat,Imgproc.COLOR_BGR2RGB);//change crop to colour
+        Imgcodecs.imwrite(Environment.getExternalStorageDirectory() + "/Images/"+ timeStamp.toString()+"_Face_Crop.png",mIntermediateMat);
 
 
 
