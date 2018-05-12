@@ -19,14 +19,20 @@ import org.opencv.core.Size;
 import android.app.Activity;
 import android.content.pm.ActivityInfo;
 import android.hardware.Camera;
+import android.icu.text.SimpleDateFormat;
+import android.icu.util.Calendar;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.SystemClock;
+import android.provider.Settings;
 import android.util.Log;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.UUID;
 
 import android.view.MenuItem;
 import android.view.Menu;
@@ -184,6 +190,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Com
         } else {
             Toast.makeText(this, "Turning off face detection", Toast.LENGTH_LONG).show();
             is_detection_on = false;
+            is_face = false;
         }
     }
 
@@ -209,7 +216,17 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Com
 
         Rect[] facesArray = faces.toArray();
         mRectFaces = facesArray;
-
+        if(mRectFaces.length > 0){
+            Toast.makeText(this, "I see a face over there!",
+                    Toast.LENGTH_LONG).show();
+            Log.i(TAG, "There are faces!");
+            is_face = true;
+        }else{
+            is_face=false;
+            Log.i(TAG, "There are not any faces!");
+            Toast.makeText(this, "You need a face to take a photo!",
+                    Toast.LENGTH_LONG).show();
+        }
         if(is_detection_on == true) {
             Log.i(TAG, "Detection was inicialized");
             drawFaces(image, mRectFaces);
@@ -237,13 +254,15 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Com
         Rect rectCrop = new Rect(faces[faceId].x, faces[faceId].y , faces[faceId].width, faces[faceId].height);
         Mat imageROI = new Mat(image,rectCrop);
         faceMat = imageROI;
-        if(mRectFaces.length > 0){
+        if(is_face == true){
             Toast.makeText(this, "I see a face over there!",
                     Toast.LENGTH_LONG).show();
-            Imgcodecs.imwrite(Environment.getExternalStorageDirectory() + "/Images/Face_Crop.png",imageROI);
+            final MediaPlayer mp = MediaPlayer.create(this, R.raw.soundcamera);
+            mp.start();
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
 
+            Imgcodecs.imwrite(Environment.getExternalStorageDirectory() + "/Images/"+ timeStamp.toString()+"_Face_Crop.png",imageROI);
         }else{
-
             Toast.makeText(this, "You need a face to take a photo!",
                     Toast.LENGTH_LONG).show();
         }
