@@ -16,16 +16,24 @@ import org.opencv.core.MatOfRect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 
+import android.app.ActionBar;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.app.DialogFragment;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.hardware.Camera;
 import android.icu.text.SimpleDateFormat;
 import android.icu.util.Calendar;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.SystemClock;
 import android.provider.Settings;
+import android.support.annotation.Nullable;
 import android.util.Log;
 
 import java.io.File;
@@ -67,15 +75,16 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Com
     private MenuItem               mItemFace40;
     private MenuItem               mItemFace30;
     private MenuItem               mItemFace20;
+    private MenuItem               mButtonClose;
     private String mPictureFileName;
     private boolean is_detection_on;
     private Rect[] mRectFaces;
     private Mat faceMat;
     private int faceID = 0;
     private CameraBridgeViewBase mOpenCvCameraView;
-
+    private boolean CameraIndex = true;
     private boolean              mIsJavaCamera = true;
-    private MenuItem             mItemSwitchCamera = null;
+    private String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
 
     Switch mySwitch = null;
 
@@ -131,9 +140,6 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Com
         }
     };
 
-    public MainActivity() {
-    }
-
 
     public void FdActivity() {
         mDetectorName = new String[1];
@@ -143,13 +149,18 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Com
     }
     /** Called when the activity is first created. */
 
+
+
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         Log.i(TAG, "called onCreate");
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
+
         setRequestedOrientation (ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+
         setContentView(R.layout.activity_main);
 
         mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.tutorial1_activity_java_surface_view);
@@ -160,13 +171,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Com
         is_detection_on = true;
 
 
-        final Button button = findViewById(R.id.button);
-        button.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                System.exit(0);
-                Log.i(TAG, "Exit button clicked");
-            }
-        });
+
         final Button button1 = findViewById(R.id.CameraButton);
         button1.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -187,11 +192,44 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Com
 
             }
         });
+        final Button button2 = findViewById(R.id.camera_change);
+            button2.setOnClickListener(new View.OnClickListener() {
+                                           public void onClick(View v) {
+                                               if (CameraIndex == true) {
+                                                   mOpenCvCameraView.disableView();
+                                                   mOpenCvCameraView.setCameraIndex(1);
+                                                   mOpenCvCameraView.enableView();
+                                                   Toast.makeText(getApplication().getBaseContext(), "Changing to front camera!",
+                                                           Toast.LENGTH_LONG).show();
 
+                                                   CameraIndex = false;
+                                               } else {
+                                                   mOpenCvCameraView.disableView();
+                                                   mOpenCvCameraView.setCameraIndex(0);
+                                                   mOpenCvCameraView.enableView();
+                                                   Toast.makeText(getApplication().getBaseContext(), "Changing to back camera!",
+                                                           Toast.LENGTH_LONG).show();
+                                                   CameraIndex = true;
+                                               }
+                                           }
+
+                                       });
 
         mySwitch = (Switch) findViewById(R.id.face_switch);
         mySwitch.setOnCheckedChangeListener( this);
+        new AlertDialog.Builder(MainActivity.this)
+                .setTitle("Your Alert")
+                .setMessage("Your Message")
+                .setCancelable(false)
+                .setPositiveButton("ok", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                    }
+                });
     }
+
+
     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
         if (isChecked) {
             Toast.makeText(this, "Turning on face detection!", Toast.LENGTH_LONG).show();
@@ -199,7 +237,6 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Com
         } else {
             Toast.makeText(this, "Turning off face detection", Toast.LENGTH_LONG).show();
             is_detection_on = false;
-
         }
     }
 
@@ -230,7 +267,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Com
             Log.i(TAG, "Detection was inicialized");
             drawFaces(image, mRectFaces);
             System.out.println(mRectFaces.length);
-        }else{
+        } else{
             Log.i(TAG, "Detection was stopped");
         }
 
@@ -240,34 +277,49 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Com
     public Mat drawFaces(Mat image, Rect[] faces) {
         //Just a function that draws rectangles on the faces
         for (int i = 0; i < faces.length; i++) {
+            faceID = i;
             Log.i(TAG, "Drawing rectangles");
             Imgproc.rectangle(image, faces[i].tl(), faces[i].br(), FACE_RECT_COLOR, 3);
-            faceID = i;
         }
-
         return image;
     }
 
-    public void cropAndSaveFace(Mat image, Rect[] faces , int faceId) {
 
-        Rect rectCrop = new Rect(faces[faceId].x, faces[faceId].y , faces[faceId].width, faces[faceId].height);
+
+    public void cropAndSaveFace(Mat image, Rect[] faces , int faceId) {
+        Rect rectCrop = new Rect(faces[faceID].x, faces[faceID].y , faces[faceID].width, faces[faceID].height);
         Mat imageROI = new Mat(image,rectCrop);
-        Mat mIntermediateMat = new Mat();
         faceMat = imageROI;
+        Mat mIntermediateMat = new Mat();
+
         Toast.makeText(this, "I see a face over there!",
                     Toast.LENGTH_LONG).show();
         final MediaPlayer mp = MediaPlayer.create(this, R.raw.soundcamera);
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+
 
         mp.start();//Camera Sound
-        Imgproc.cvtColor(faceMat,mIntermediateMat,Imgproc.COLOR_BGR2RGB);//change crop to colour
+        Imgproc.cvtColor(faceMat,mIntermediateMat,Imgproc.COLOR_BGR2RGB); //change crop to colour
         Imgcodecs.imwrite(Environment.getExternalStorageDirectory() + "/Images/"+ timeStamp.toString()+"_Face_Crop.png",mIntermediateMat);
-
+        sharePhoto();
 
 
     }
 
+    public void sharePhoto(){
+        new AlertDialog.Builder(this)
+                .setTitle("Would you like to share the photo?")
 
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        Intent share = new Intent(Intent.ACTION_SEND);
+                        share.setType("image/*");
+                        share.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(new File(Environment.getExternalStorageDirectory() + "/Images/" + timeStamp.toString() + "_Face_Crop.png")));
+                        startActivity(Intent.createChooser(share,"Share via"));
+
+                    }
+                }).setNegativeButton("No", null).show();
+    }
     @Override
     public void onPause()
     {
@@ -311,6 +363,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Com
         mRgba = inputFrame.rgba();
         mGray = inputFrame.gray();
 
+
         detectFaces(mRgba);
 
         return mRgba;
@@ -325,6 +378,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Com
         mItemFace40 = menu.add("Face size 40%");
         mItemFace30 = menu.add("Face size 30%");
         mItemFace20 = menu.add("Face size 20%");
+        mButtonClose = menu.add("Close app");
+
         getMenuInflater();
         return true;
     }
@@ -340,6 +395,9 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Com
             setMinFaceSize(0.3f);
         else if (item == mItemFace20)
             setMinFaceSize(0.2f);
+        else if (item == mButtonClose)
+            System.exit(0);
+        Log.i(TAG, "Exit button clicked");
 
         return true;
     }

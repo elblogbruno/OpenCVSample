@@ -5,15 +5,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <Button
-        android:id="@+id/button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentTop="true"
-        android:text="Close App"
-        android:visibility="visible" />
-
     <org.opencv.android.JavaCameraView
         android:id="@+id/tutorial1_activity_java_surface_view"
         android:layout_width="match_parent"
@@ -28,7 +19,7 @@
         android:layout_height="62dp"
         android:layout_alignParentEnd="true"
         android:layout_centerVertical="true"
-        android:layout_marginEnd="47dp"
+        android:layout_marginEnd="49dp"
         android:background="@android:drawable/ic_menu_camera"
         android:onClick="captureImage" />
 
@@ -38,7 +29,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
-        android:layout_marginStart="97dp"
+        android:layout_marginStart="181dp"
         android:background="@android:color/holo_red_light"
         android:capitalize="none"
         android:checked="true"
@@ -49,6 +40,18 @@
         android:textOff="No"
         android:textOn="Yes"
         android:visibility="visible" />
+
+    <Button
+        android:id="@+id/camera_change"
+        android:layout_width="48dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginEnd="157dp"
+        android:background="@android:drawable/ic_menu_view"
+        android:backgroundTint="@android:color/holo_red_dark"
+        android:elevation="@android:dimen/app_icon_size" />
+
 
 </RelativeLayout>
 
