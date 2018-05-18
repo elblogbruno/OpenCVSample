@@ -19,20 +19,10 @@ import org.opencv.core.MatOfRect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 
-import android.app.ActionBar;
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Dialog;
-import android.app.DialogFragment;
-import android.content.DialogInterface;
-import android.content.Intent;
-import android.content.pm.ActivityInfo;
-import android.hardware.Camera;
+
 import android.icu.text.SimpleDateFormat;
 import android.icu.util.Calendar;
-import android.media.MediaPlayer;
-import android.net.Uri;
-import android.os.Bundle;
+
 import android.os.Environment;
 import android.os.SystemClock;
 import android.provider.Settings;
@@ -47,19 +37,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import android.view.LayoutInflater;
-import android.view.MenuItem;
-import android.view.Menu;
+
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.content.Context;
-import android.widget.CompoundButton;
-import android.widget.ImageView;
-import android.widget.Switch;
-import android.widget.TextView;
-import android.widget.Toast;
+
 
 import org.opencv.core.Rect;
 
@@ -81,16 +64,11 @@ public class OpenCVDetector implements CameraBridgeViewBase.CvCameraViewListener
     private String[] mDetectorName;
     private float mRelativeFaceSize = 0.2f;
     private int mAbsoluteFaceSize = 0;
-    private MenuItem mItemFace50;
-    private MenuItem mItemFace40;
-    private MenuItem mItemFace30;
-    private MenuItem mItemFace20;
     private boolean is_detection_on = true;
     private Rect[] mRectFaces;
     private CameraBridgeViewBase mOpenCvCameraView;
     private String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
 
-    Switch mySwitch = null;
 
 
 
