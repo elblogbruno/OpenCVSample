@@ -40,8 +40,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
+import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.Menu;
 import android.view.SurfaceView;
@@ -50,11 +53,14 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.content.Context;
 import android.widget.CompoundButton;
+import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import opencv_mobilenet.samples.opencv.org.opencvsample.OpenCVDetector;
 import org.opencv.core.Rect;
+
+import static android.os.Environment.DIRECTORY_PICTURES;
 
 
 public class MainActivity extends Activity implements CvCameraViewListener2, CompoundButton.OnCheckedChangeListener {
@@ -63,6 +69,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Com
     private static final Scalar    FACE_RECT_COLOR     = new Scalar(0, 255, 0, 255);
     public static final int JAVA_DETECTOR = 0;
 
+
+    private OpenCVDetector mOpenCVDetector;
     private Mat                    mRgba;
     private Mat                    mGray;
     private File                   mCascadeFile;
@@ -77,13 +85,11 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Com
     private MenuItem               mItemFace20;
     private MenuItem               mButtonClose;
     private String mPictureFileName;
-    private boolean is_detection_on;
+    private boolean is_detection_on = true;
     private Rect[] mRectFaces;
     private Mat faceMat;
-    private int faceID = 0;
     private CameraBridgeViewBase mOpenCvCameraView;
     private boolean CameraIndex = true;
-    private boolean              mIsJavaCamera = true;
     private String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
 
     Switch mySwitch = null;
@@ -97,33 +103,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Com
                 {
                     Log.i(TAG, "OpenCV loaded successfully");
 
-
                     try {
-                        // load cascade file from application resources
-                        InputStream is = getResources().openRawResource(R.raw.lbpcascade_frontalface);
-                        File cascadeDir = getDir("cascade", Context.MODE_PRIVATE);
-                        mCascadeFile = new File(cascadeDir, "lbpcascade_frontalface.xml");
-                        FileOutputStream os = new FileOutputStream(mCascadeFile);
-
-                        byte[] buffer = new byte[4096];
-                        int bytesRead;
-                        while ((bytesRead = is.read(buffer)) != -1) {
-                            os.write(buffer, 0, bytesRead);
-                        }
-                        is.close();
-                        os.close();
-
-                        mJavaDetector = new CascadeClassifier(mCascadeFile.getAbsolutePath());
-                        mJavaDetector.load( mCascadeFile.getAbsolutePath() );
-                        if (mJavaDetector.empty()) {
-                            Log.e(TAG, "Failed to load cascade classifier");
-                            mJavaDetector = null;
-                        } else
-                            Log.i(TAG, "Loaded cascade classifier from " + mCascadeFile.getAbsolutePath());
-
-
-
-                        cascadeDir.delete();
+                       mOpenCVDetector.createFaceDetector();
 
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -158,7 +139,6 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Com
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-
         setRequestedOrientation (ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
         setContentView(R.layout.activity_main);
@@ -167,10 +147,6 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Com
 
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
         mOpenCvCameraView.setCvCameraViewListener(this);
-
-        is_detection_on = true;
-
-
 
         final Button button1 = findViewById(R.id.CameraButton);
         button1.setOnClickListener(new View.OnClickListener() {
@@ -182,7 +158,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Com
                 } else {
                     if (mRectFaces.length > 0 && is_detection_on == true) {
                         Log.i(TAG, "Making a photo!");
-                        cropAndSaveFace(mRgba, mRectFaces, faceID);
+                        List<Mat> cropped_objects = mOpenCVDetector.cropObjects(mRgba, mRectFaces);
+                        mOpenCVDetector.saveCroppedRois(cropped_objects);
                     } else {
                         Log.i(TAG, "Not making a photo!");
                         Toast.makeText(getApplication().getBaseContext(), "You need a face to take a photo!",
@@ -217,16 +194,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Com
 
         mySwitch = (Switch) findViewById(R.id.face_switch);
         mySwitch.setOnCheckedChangeListener( this);
-        new AlertDialog.Builder(MainActivity.this)
-                .setTitle("Your Alert")
-                .setMessage("Your Message")
-                .setCancelable(false)
-                .setPositiveButton("ok", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
 
-                    }
-                });
     }
 
 
@@ -241,7 +209,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Com
     }
 
 
-    public boolean detectFaces(Mat image) {
+    /*public Rect[] detectFaces(Mat image) {
         // run detector
         // store detected faces into -> mRectFaces
         // return false if no faces, true one or more faces
@@ -261,65 +229,58 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Com
         }
 
         Rect[] facesArray = faces.toArray();
-        mRectFaces = facesArray;
+        return facesArray;
+    }*/
 
-        if(is_detection_on == true) {
-            Log.i(TAG, "Detection was inicialized");
-            drawFaces(image, mRectFaces);
-            System.out.println(mRectFaces.length);
-        } else{
-            Log.i(TAG, "Detection was stopped");
-        }
-
-        return true;
-    }
-
-    public Mat drawFaces(Mat image, Rect[] faces) {
+    /*public Mat drawFaces(Mat image, Rect[] faces) {
         //Just a function that draws rectangles on the faces
         for (int i = 0; i < faces.length; i++) {
-            faceID = i;
-            Log.i(TAG, "Drawing rectangles");
+            //Log.i(TAG, "Drawing rectangles");
             Imgproc.rectangle(image, faces[i].tl(), faces[i].br(), FACE_RECT_COLOR, 3);
         }
         return image;
-    }
+    }*/
 
+    /*public List<Mat> cropObjects(Mat image, Rect [] rois) {
+        Log.i(TAG, "Cropping objects");
+        System.out.println(rois.length);
 
+        List<Mat> list_rois = new ArrayList<>();
+        for (int i = 0; i < rois.length; i++) {
+            Mat cropped_roi = cropROI(image, rois[i],i);
+            list_rois.add(cropped_roi);
 
-    public void cropAndSaveFace(Mat image, Rect[] faces , int faceId) {
-        Rect rectCrop = new Rect(faces[faceID].x, faces[faceID].y , faces[faceID].width, faces[faceID].height);
-        Mat imageROI = new Mat(image,rectCrop);
-        faceMat = imageROI;
-        Mat mIntermediateMat = new Mat();
+        }
+        return list_rois;
+    }*/
 
-        Toast.makeText(this, "I see a face over there!",
+    /*public void saveCroppedRois(List<Mat> list_rois){
+        int id = 0;
+        for (Mat roi : list_rois){
+            Toast.makeText(getApplication().getBaseContext(), "Taking photo!",
                     Toast.LENGTH_LONG).show();
-        final MediaPlayer mp = MediaPlayer.create(this, R.raw.soundcamera);
+
+            Boolean bool = Imgcodecs.imwrite(Environment.getExternalStorageDirectory() + "/Images/" + timeStamp.toString() + "_Face_Crop" + id  + ".png", roi);
+
+            if (bool)
+                Log.i(TAG, "SUCCESS writing image to external storage");
+            else
+                Log.i(TAG, "Fail writing image to external storage");
+            id++;
+        }
+    }*/
+
+    /*public Mat cropROI(Mat image, Rect roi , int id) {
+        Rect rectCrop = new Rect(roi.x, roi.y , roi.width, roi.height);  //Crops the face with x,y,width and height
+        Mat image_roi_bgr = new Mat(image,rectCrop); //Saves the crop to a new mat called imageROI
+
+        Mat image_roi_rgb = new Mat();
+        Imgproc.cvtColor(image_roi_bgr, image_roi_rgb, Imgproc.COLOR_BGR2RGB); //change crop to rgba
+
+        return image_roi_rgb;
+    }*/
 
 
-        mp.start();//Camera Sound
-        Imgproc.cvtColor(faceMat,mIntermediateMat,Imgproc.COLOR_BGR2RGB); //change crop to colour
-        Imgcodecs.imwrite(Environment.getExternalStorageDirectory() + "/Images/"+ timeStamp.toString()+"_Face_Crop.png",mIntermediateMat);
-        sharePhoto();
-
-
-    }
-
-    public void sharePhoto(){
-        new AlertDialog.Builder(this)
-                .setTitle("Would you like to share the photo?")
-
-                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        Intent share = new Intent(Intent.ACTION_SEND);
-                        share.setType("image/*");
-                        share.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(new File(Environment.getExternalStorageDirectory() + "/Images/" + timeStamp.toString() + "_Face_Crop.png")));
-                        startActivity(Intent.createChooser(share,"Share via"));
-
-                    }
-                }).setNegativeButton("No", null).show();
-    }
     @Override
     public void onPause()
     {
@@ -363,10 +324,13 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Com
         mRgba = inputFrame.rgba();
         mGray = inputFrame.gray();
 
+        Mat image_vis  = mRgba;
+        if (is_detection_on){
+            mRectFaces = mOpenCVDetector.detectFaces(mRgba);
+            image_vis = mOpenCVDetector.drawFaces(image_vis, mRectFaces);
+        }
 
-        detectFaces(mRgba);
-
-        return mRgba;
+        return image_vis;
 
 
     }
