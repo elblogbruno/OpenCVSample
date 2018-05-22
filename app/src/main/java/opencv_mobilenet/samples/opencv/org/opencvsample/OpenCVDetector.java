@@ -1,45 +1,31 @@
 package opencv_mobilenet.samples.opencv.org.opencvsample;
 
 import android.app.Activity;
-import org.opencv.core.Mat;
-
-import org.opencv.core.Point;
-import org.opencv.imgcodecs.Imgcodecs;
-import org.opencv.objdetect.CascadeClassifier;
-import org.opencv.imgproc.Imgproc;
-import org.opencv.core.MatOfRect;
-import org.opencv.core.Scalar;
-import org.opencv.core.Size;
-import org.opencv.android.OpenCVLoader;
+import android.app.ActivityManager;
 import android.content.Context;
 import android.icu.text.SimpleDateFormat;
 import android.icu.util.Calendar;
-
 import android.os.Environment;
-import android.os.SystemClock;
-import android.provider.Settings;
-import android.support.annotation.Nullable;
 import android.util.Log;
+
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfRect;
+import org.opencv.core.Rect;
+import org.opencv.core.Scalar;
+import org.opencv.core.Size;
+import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.Imgproc;
+import org.opencv.objdetect.CascadeClassifier;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
-
-
-
-
-import org.opencv.core.Rect;
-
-import static android.os.Environment.DIRECTORY_PICTURES;
-
-public class OpenCVDetector extends Activity{
-
+public class OpenCVDetector {
     private static final String TAG = "OCVSample::OpenCVDetector";
     private static final Scalar FACE_RECT_COLOR = new Scalar(0, 255, 0, 255);
     public static final int JAVA_DETECTOR = 0;
@@ -52,13 +38,13 @@ public class OpenCVDetector extends Activity{
     private String[] mDetectorName;
     private float mRelativeFaceSize = 0.2f;
     private int mAbsoluteFaceSize = 0;
-
     private String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
 
 
-    public void createFaceDetector() throws IOException {
-        InputStream is = getResources().openRawResource(R.raw.lbpcascade_frontalface);
-        File cascadeDir = getDir("cascade", Context.MODE_PRIVATE);
+
+    public void createFaceDetector(Context context) throws IOException {
+        InputStream is = context.getResources().openRawResource(R.raw.lbpcascade_frontalface);
+        File cascadeDir = context.getDir("cascade", Context.MODE_PRIVATE);
         mCascadeFile = new File(cascadeDir, "lbpcascade_frontalface.xml");
         FileOutputStream os = new FileOutputStream(mCascadeFile);
 
@@ -89,7 +75,7 @@ public class OpenCVDetector extends Activity{
         Mat image_gray =  new Mat();
         Imgproc.cvtColor(image_bgr, image_gray, Imgproc.COLOR_BGR2GRAY); //change crop to rgba
         // run detector
-        // store detected faces into -> mRectFaces
+        // store detected faces into -> facesArray
         // return false if no faces, true one or more faces
         MatOfRect faces = new MatOfRect();
         if (mAbsoluteFaceSize == 0) {
@@ -147,7 +133,7 @@ public class OpenCVDetector extends Activity{
 
     public Mat cropROI(Mat image, Rect roi, int id) {
         Rect rectCrop = new Rect(roi.x, roi.y, roi.width, roi.height);  //Crops the face with x,y,width and height
-        Mat image_roi_bgr = new Mat(image, rectCrop); //Saves the crop to a new mat called imageROI
+        Mat image_roi_bgr = new Mat(image, rectCrop); //Saves the crop to a new mat called image_roi_bgr(in blue color)
         Mat image_roi_rgb = new Mat();
         Imgproc.cvtColor(image_roi_bgr, image_roi_rgb, Imgproc.COLOR_BGR2RGB); //change crop to rgba
         return image_roi_rgb;
