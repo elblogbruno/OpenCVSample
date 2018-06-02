@@ -336,7 +336,7 @@ public class JavaCamera2View extends CameraBridgeViewBase {
                 Imgproc.cvtColor(mYuvFrameData, mRgba, Imgproc.COLOR_YUV2RGB_I420, 4); // COLOR_YUV2RGBA_YV12 produces inverted colors
             else if (mPreviewFormat == ImageFormat.YUV_420_888) {
                 assert (mUVFrameData != null);
-                Imgproc.cvtColorTwoPlane(mYuvFrameData, mUVFrameData, mRgba, Imgproc.COLOR_YUV2RGBA_NV21);
+                Imgproc.cvtColor(mYuvFrameData, mUVFrameData, mRgba, Imgproc.COLOR_YUV2RGBA_NV21);
             } else
                 throw new IllegalArgumentException("Preview Format can be NV21 or YV12");
 

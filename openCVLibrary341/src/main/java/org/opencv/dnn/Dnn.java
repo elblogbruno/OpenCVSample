@@ -42,7 +42,7 @@ public class Dnn {
     }
 
     //javadoc: blobFromImage(image)
-    public static Mat blobFromImage(Mat image)
+    public static Mat blobFromImage(Mat image, double IN_SCALE_FACTOR, Size size, Scalar scalar, boolean b)
     {
         
         Mat retVal = new Mat(blobFromImage_1(image.nativeObj));
